@@ -1,0 +1,72 @@
+hall, meal, item_name, calories, protein_g, carbs_g, fat_g
+core, breakfast, scrambled eggs, 180, 15, 0, 12
+core, breakfast,  turkey bacon, 60, 4, 0, 5
+core, breakfast, Home Fries, 140, 2, 24, 4.5
+core, breakfast, bacon egg and cheese biscuit, 280, 11, 27, 15
+core, breakfast, southern biscuit, 190, 4, 26, 7
+core, breakfast, oatmeal, 110, 4, 20, 2
+core, breakfast, non-fat greek yogurt, 35, 6, 2, 0
+core, breakfast, non-fat vanilla/strawberry yogurt, 45, 2, 9, 0
+core, breakfast, chocolate croissant, 5, 0,0,0
+core, breakfast, iced cinnamon roll, 200, 3,31, 8
+core, breakfast, banana bread, 170, 2, 32, 4.5 
+core, lunch, cumin-spiced grilled carrots, 45, 1, 8, 1
+core, lunch, basmati rice, 130, 3, 27, 1
+core, lunch, seasoned black beans, 90, 5, 15, 1
+core, lunch, ground beef, 90, 8, 0, 6
+core, lunch, shredded cheddar cheese, 110, 7, 1, 9
+core, lunch, sour cream, 30, 0, 1, 3
+core, lunch, flour tortilla, 90, 3, 15, 2
+core, lunch, iceberg lettuce, 5, 0, 1, 0
+core, lunch, mexi-rice, 130, 3, 26, 2
+core, lunch, classic hot dog, 310, 11, 27, 18
+core, lunch, crispy homestyle french fries, 120, 2, 15, 6
+core, lunch, cheeseburger, 420, 22, 30, 22
+core, lunch, crispy homestyle french fries, 120, 2, 15, 6
+core, lunch, honey mustard grilled chicken, 430, 32, 32, 18
+core, lunch, crispy homestyle french fries, 120, 2, 15, 6
+core, lunch, american cheese, 50, 3, 1, 4
+core, lunch, cheddar cheese, 60, 4, 0, 5
+core, lunch, swiss cheese, 60, 5, 1, 4
+core, lunch, lettuce, 5, 0, 1, 0
+core, lunch, sliced red onions, 5, 0, 1, 0
+core, lunch, item_name, calories, protein_g, carbs_g, fat_g
+core, lunch, classic cheese pizza, 270, 12, 28, 12
+core, lunch, pepperoni pizza, 300, 13, 28, 15
+core, lunch, flour tortilla (large), 210, 6, 34, 5
+core, lunch, white bread, 80, 3, 14, 1
+core, lunch, whole wheat bread, 90, 4, 17, 1
+core, lunch, cheddar cheese, 60, 4, 0, 5
+core, lunch, creamy tuna salad, 140, 10, 2, 10
+core, lunch, ham, 30, 5, 1, 1
+core, lunch, provolone cheese, 50, 4, 0, 4
+core, lunch, swiss cheese, 60, 5, 1, 4
+core, lunch, turkey breast, 25, 5, 0, 0
+core, lunch, bacon pieces, 70, 5, 0, 5
+core, lunch, chopped hard-cooked egg, 70, 6, 1, 5
+core, lunch, diced ham, 50, 8, 1, 1
+core, lunch, garbanzo beans, 70, 4, 12, 1
+core, lunch, shredded cheddar cheese, 110, 7, 1, 9
+core, lunch, shredded mozzarella, 40, 3, 1, 3
+core, lunch, croutons, 60, 2, 10, 2
+core, lunch, baby spinach, 100, 12, 10, 1
+core, lunch, black olives, 20, 0, 1, 2
+core, lunch, cucumbers, 0, 0, 1, 0
+core, lunch, grape tomatoes, 10, 0, 2, 0
+core, lunch, romaine lettuce, 5, 0, 1, 0
+core, lunch, shredded carrots, 5, 0, 1, 0
+core, lunch, sliced mixed bell peppers, 100, 2, 24, 0
+core, lunch, spring salad mix, 0, 0, 1, 0
+core, lunch, balsamic vinaigrette, 60, 0, 4, 4
+core, lunch, creamy caesar dressing, 140, 1, 2, 14
+core, lunch, honey mustard dressing, 130, 0, 10, 9
+core, lunch, light ranch dressing, 80, 1, 2, 7
+core, lunch, lite italian dressing, 40, 0, 6, 2
+core, lunch, black bean soup, 140, 8, 22, 2
+core, lunch, plant-based chicken tenders, 130, 10, 15, 4
+core, lunch, crispy homestyle french fries, 120, 2, 18, 5
+core, lunch, citrus braised pork, 180, 22, 3, 8
+core, lunch, green chili calabacitas, 50, 2, 9, 1
+core, lunch, cilantro lime rice, 120, 2, 25, 2
+
+
