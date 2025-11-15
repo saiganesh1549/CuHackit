@@ -293,33 +293,13 @@ def find_best_match(menu_df: pd.DataFrame, detected_food: str) -> Optional[str]:
     return best_match
 
 
-def predict_meal_from_image(
-    image_path: str, menu_df: pd.DataFrame = None
-) -> List[Dict]:
+def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
     """
-    Use Gemini Vision API to identify meals from an image.
-    Now includes fuzzy matching to connect detected food to CSV menu items.
-
-    Args:
-        image_path: Path to the image file
-        menu_df: DataFrame of menu items for better matching (optional)
-
-    Returns:
-        List of dictionaries with label and confidence
+    Use Gemini Vision API to identify the food in an image.
+    This version ignores menu_df entirely and returns ONLY the model output.
     """
-    # Try multiple ways to get API key
+
     api_key = os.getenv("GEMINI_API_KEY")
-
-    # Fallback: try to get from streamlit secrets if running on cloud
-    if not api_key:
-        try:
-            import streamlit as st
-
-            if "GEMINI_API_KEY" in st.secrets:
-                api_key = st.secrets["GEMINI_API_KEY"]
-        except:
-            pass
-
     if not api_key:
         print("Warning: GEMINI_API_KEY not set")
         return []
@@ -327,43 +307,17 @@ def predict_meal_from_image(
     client = genai.Client(api_key=api_key)
 
     try:
-        # Read and encode image
-        with open(image_path, "rb") as image_file:
-            image_data = base64.b64encode(image_file.read()).decode("utf-8")
-
-        # Build a list of available menu items to help Gemini
-        menu_context = ""
-        if menu_df is not None and not menu_df.empty:
-            sample_items = menu_df["item_name"].head(50).tolist()
-            menu_context = (
-                f"\n\nAvailable menu items include: {', '.join(sample_items[:30])}"
-            )
-
-        # Gemini API endpoint (use v1beta with key parameter)
+        # Load & encode image
+        with open(image_path, "rb") as f:
+            image_data = base64.b64encode(f.read()).decode("utf-8")
 
         payload = [
             {
                 "parts": [
                     {
-                        "text": f"""You are a food recognition expert for college dining halls. 
-Identify the main food item in this image. Look carefully at the food and identify what it is.
-
-Common items you might see:
-- Burgers (cheeseburger, hamburger)
-- Pizza (cheese pizza, pepperoni pizza)
-- Chicken (grilled chicken, fried chicken, chicken tenders)
-- Eggs (scrambled eggs, fried eggs)
-- French fries, hash browns, tater tots
-- Sandwiches (turkey sandwich, ham sandwich)
-- Salads
-- Rice, beans, pasta
-- Cookies, brownies, desserts
-
-{menu_context}
-
-Return ONLY the food name in lowercase (example: "cheeseburger" or "scrambled eggs" or "cheese pizza"). 
-Do not include articles (a, an, the), descriptions, or extra words.
-Just the simple food name."""
+                        "text": """You are a food recognition expert.
+Identify the main food item in this image. 
+Return ONLY the food name in lowercase with no extra words."""
                     },
                     {
                         "inline_data": {
@@ -376,45 +330,46 @@ Just the simple food name."""
         ]
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash", contents=payload
+            model="gemini-2.5-flash",
+            contents=payload
         )
 
-        print(response)
+        # Extract pure text result
+        result_text = response.text.strip().lower()
 
-        print(f"API Response Status: {response.status_code}")
+        return [{
+            "label": result_text,
+            "confidence": 0.92,
+            "raw_detection": result_text,
+        }]
 
-        response.raise_for_status()
-        result = response.json()
+    except Exception as e:
+        print("Error calling Gemini:", e)
+        import traceback
+        traceback.print_exc()
+        return []
 
-        print(f"Full API Response: {result}")
 
-        # Parse Gemini response
-        if "candidates" in result and len(result["candidates"]) > 0:
-            detected_text = (
-                result["candidates"][0]["content"]["parts"][0]["text"].strip().lower()
-            )
-            print(f"Gemini detected: '{detected_text}'")
+        detected_text = result_text
+        original_detected = result_text
 
-            # Try to find best match in menu
-            original_detected = detected_text
-            if menu_df is not None:
-                best_match = find_best_match(menu_df, detected_text)
-                if best_match:
-                    print(f"Matched to menu item: '{best_match}'")
-                    detected_text = best_match
-                else:
-                    print(f"No menu match found for: '{original_detected}'")
+        # Try menu fuzzy-matching
+        if menu_df is not None:
+            best_match = find_best_match(menu_df, detected_text)
+            if best_match:
+                print(f"Matched to menu item: '{best_match}'")
+                detected_text = best_match
+            else:
+                print(f"No menu match found for: '{original_detected}'")
 
             return [
-                {
+                    {
                     "label": detected_text,
-                    "confidence": 0.92,
-                    "raw_detection": original_detected,
-                }
-            ]
-
-        print("No candidates in API response")
-        return []
+                        "confidence": 0.92,
+                        "raw_detection": original_detected,
+            }
+        ]
+    
 
     except Exception as e:
         print(f"Error calling Gemini API: {e}")

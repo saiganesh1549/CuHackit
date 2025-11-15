@@ -151,7 +151,7 @@ elif upload_image or camera_image:
     with col2:
         # Get predictions from Gemini (now with menu context)
         with st.spinner("Identifying meal..."):
-            predictions = predict_meal_from_image(temp_path)
+            predictions = predict_meal_from_image(temp_path, None)
         
         if predictions:
             st.success("✅ Meal identified!")
