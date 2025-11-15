@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import streamlit as st
 import os
 from utils import load_menus, search_meals, suggest_healthier, predict_meal_from_image
