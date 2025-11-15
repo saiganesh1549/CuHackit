@@ -1,0 +1,13 @@
+hall, meal, item_name, calories, protein_g, carbs_g, fat_g
+core, breakfast, scrambled eggs, 180, 15, 0, 12
+core, breakfast,  turkey bacon, 60, 4, 0, 5
+core, breakfast, Home Fries, 140, 2, 24, 4.5
+core, breakfast, bacon egg and cheese biscuit, 280, 11, 27, 15
+core, breakfast, southern biscuit, 190, 4, 26, 7
+core, breakfast, oatmeal, 110, 4, 20, 2
+core, breakfast, non-fat greek yogurt, 35, 6, 2, 0
+core, breakfast, non-fat vanilla/strawberry yogurt, 45, 2, 9, 0
+core, breakfast, chocolate croissant, 5, 0,0,0
+core, breakfast, iced cinnamon roll, 200, 3,31, 8
+core, breakfast, banana bread, 170, 2, 32, 4.5 
+
