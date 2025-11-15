@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from utils import load_menus, search_meals, suggest_healthier, predict_meal_from_image
+import google.generativeai as genai
 
 # Page config
 st.set_page_config(page_title="AI Meal Optimizer", layout="wide")
