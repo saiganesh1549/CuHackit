@@ -2,6 +2,9 @@ import streamlit as st
 import os
 from utils import load_menus, search_meals, suggest_healthier, predict_meal_from_image
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # Page config
 st.set_page_config(page_title="AI Meal Optimizer", layout="wide")
 
