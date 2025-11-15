@@ -2,9 +2,6 @@ import streamlit as st
 import os
 from utils import load_menus, search_meals, suggest_healthier, predict_meal_from_image
 
-from dotenv import load_dotenv
-load_dotenv()
-
 # Page config
 st.set_page_config(page_title="AI Meal Optimizer", layout="wide")
 
@@ -145,44 +142,64 @@ elif upload_image or camera_image:
     # Display the uploaded image
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.image(image_source, caption="Your Meal", use_container_width=True)
+        st.image(image_source, caption="Your Meal", width="stretch")
     
     with col2:
-        # Get predictions from Gemini
+        # Get predictions from Gemini (now with menu context)
         with st.spinner("Identifying meal..."):
-            predictions = predict_meal_from_image(temp_path)
+            predictions = predict_meal_from_image(temp_path, menu_df)
         
         if predictions:
             st.success("✅ Meal identified!")
             for p in predictions:
                 st.write(f"**Detected:** {p['label']} (Confidence: {p['confidence']*100:.0f}%)")
             
-            # Suggest healthier alternatives
-            st.divider()
-            st.subheader("💚 Healthier Alternatives")
+            # Try to find the exact match in our menu
+            detected_name = predictions[0]['label']
+            exact_match = search_meals(filtered_df, detected_name, top_n=1)
             
-            healthier = suggest_healthier(filtered_df, predictions[0]['label'])
-            
-            if healthier:
-                for i, h in enumerate(healthier, 1):
-                    # Format macro info
-                    macro_info = ""
-                    if 'protein_g' in h and 'carbs_g' in h and 'fat_g' in h:
-                        macro_info = f" — 🥩 {h['protein_g']}g protein, 🍞 {h['carbs_g']}g carbs, 🧈 {h['fat_g']}g fat"
-                    
-                    meal_badge = ""
-                    if 'meal' in h:
-                        meal_emoji = {"breakfast": "🌅", "lunch": "🌞", "dinner": "🌙"}.get(h['meal'], "")
-                        meal_badge = f" {meal_emoji}" if meal_emoji else ""
-                    
-                    st.write(
-                        f"**{i}. {h['item_name']}**{meal_badge} — 🔥 {h['calories']} cal{macro_info} — 📍 {h['hall']}"
-                    )
+            if exact_match:
+                st.info(f"📍 Found in menu: **{exact_match[0]['item_name']}** — {exact_match[0]['calories']} cal")
+                
+                # Suggest healthier alternatives
+                st.divider()
+                st.subheader("💚 Healthier Alternatives")
+                
+                healthier = suggest_healthier(filtered_df, exact_match[0]['item_name'])
+                
+                if healthier:
+                    for i, h in enumerate(healthier, 1):
+                        calories_saved = exact_match[0]['calories'] - h['calories']
+                        
+                        # Format macro info
+                        macro_info = ""
+                        if 'protein_g' in h and 'carbs_g' in h and 'fat_g' in h:
+                            macro_info = f" — 🥩 {h['protein_g']}g protein, 🍞 {h['carbs_g']}g carbs, 🧈 {h['fat_g']}g fat"
+                        
+                        meal_badge = ""
+                        if 'meal' in h:
+                            meal_emoji = {"breakfast": "🌅", "lunch": "🌞", "dinner": "🌙"}.get(h['meal'], "")
+                            meal_badge = f" {meal_emoji}" if meal_emoji else ""
+                        
+                        st.write(
+                            f"**{i}. {h['item_name']}**{meal_badge} — 🔥 {h['calories']} cal{macro_info} — 📍 {h['hall']} "
+                            f"✅ *(Save {calories_saved} calories)*"
+                        )
+                else:
+                    st.info("No lower-calorie alternatives found for this meal.")
             else:
-                st.info(
-                    f"No exact match found for '{predictions[0]['label']}' in our menu database. "
-                    "Try searching manually or upload a clearer image."
+                st.warning(
+                    f"⚠️ Could not find exact match for '{detected_name}' in menu. Try searching manually below."
                 )
+                
+                # Show a search box for manual correction
+                manual_search = st.text_input("Search manually:", key="manual_search")
+                if manual_search:
+                    manual_results = search_meals(filtered_df, manual_search, top_n=3)
+                    if manual_results:
+                        st.write("**Suggestions:**")
+                        for i, r in enumerate(manual_results, 1):
+                            st.write(f"{i}. {r['item_name']} — {r['calories']} cal — {r['hall']}")
         else:
             st.error("❌ Could not identify the meal. Make sure GEMINI_API_KEY is set, or try a clearer image.")
     
@@ -208,10 +225,14 @@ else:
     ### Features:
     - 🔍 Search across multiple dining halls
     - 📊 Complete nutrition info (calories, protein, carbs, fat)
-    - 🤖 AI-powered image recognition (requires GEMINI_API_KEY)
+    - 🤖 AI-powered image recognition with smart matching
     - 💡 Smart recommendations based on meal type and nutrition
     - 🕐 Filter by meal time (breakfast/lunch/dinner)
     - 🏫 Filter by dining hall location
+    
+    ### Setup Required:
+    - Set `GEMINI_API_KEY` environment variable to enable image recognition
+    - Get your free API key at: https://aistudio.google.com/app/apikey
     """)
     
     # Show sample of available meals

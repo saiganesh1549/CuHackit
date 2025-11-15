@@ -222,12 +222,64 @@ def suggest_healthier(menu_df: pd.DataFrame, meal_name: str, top_n: int = 3) -> 
     return healthier[return_cols].to_dict('records')
 
 
-def predict_meal_from_image(image_path: str) -> List[Dict]:
+def find_best_match(menu_df: pd.DataFrame, detected_food: str) -> Optional[str]:
+    """
+    Find the best matching menu item for a detected food name.
+    Uses fuzzy matching to handle variations in naming.
+    
+    Args:
+        menu_df: DataFrame with menu items
+        detected_food: The food name detected by Gemini
+        
+    Returns:
+        Best matching menu item name or None
+    """
+    if menu_df.empty:
+        return None
+    
+    detected_lower = detected_food.lower().strip()
+    
+    # First try exact match
+    exact_match = menu_df[menu_df['item_name'].str.lower() == detected_lower]
+    if not exact_match.empty:
+        return exact_match.iloc[0]['item_name']
+    
+    # Try partial matches
+    # Split detected food into words
+    words = detected_lower.split()
+    
+    # Score each menu item based on word matches
+    best_match = None
+    best_score = 0
+    
+    for _, row in menu_df.iterrows():
+        item_name = row['item_name'].lower()
+        score = 0
+        
+        # Check if all words from detected food are in menu item
+        if detected_lower in item_name:
+            score = 100
+        else:
+            # Count matching words
+            for word in words:
+                if word in item_name:
+                    score += 10
+        
+        if score > best_score and score >= 10:  # Require at least one word match
+            best_score = score
+            best_match = row['item_name']
+    
+    return best_match
+
+
+def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None) -> List[Dict]:
     """
     Use Gemini Vision API to identify meals from an image.
+    Now includes fuzzy matching to connect detected food to CSV menu items.
     
     Args:
         image_path: Path to the image file
+        menu_df: DataFrame of menu items for better matching
         
     Returns:
         List of dictionaries with label and confidence
@@ -243,8 +295,14 @@ def predict_meal_from_image(image_path: str) -> List[Dict]:
         with open(image_path, "rb") as image_file:
             image_data = base64.b64encode(image_file.read()).decode('utf-8')
         
-        # Gemini API endpoint (correct endpoint for vision)
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        # Build a list of available menu items to help Gemini
+        menu_context = ""
+        if menu_df is not None and not menu_df.empty:
+            sample_items = menu_df['item_name'].head(50).tolist()
+            menu_context = f"\n\nAvailable menu items include: {', '.join(sample_items[:30])}"
+        
+        # Gemini API endpoint (updated URL format)
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
         
         headers = {
             "Content-Type": "application/json"
@@ -254,18 +312,19 @@ def predict_meal_from_image(image_path: str) -> List[Dict]:
             "contents": [{
                 "parts": [
                     {
-                        "text": """You are a food recognition expert for college dining halls. 
-Identify this meal and return ONLY the exact menu item name.
+                        "text": f"""You are a food recognition expert for college dining halls. 
+Identify this meal and return ONLY the exact menu item name or the most similar match.
 
-Common dining hall items include:
-- Sandwiches: cheeseburger, chicken sandwich, turkey sandwich
-- Pizza: cheese pizza, pepperoni pizza
-- Proteins: grilled chicken, scrambled eggs, turkey bacon
-- Sides: french fries, home fries, salad, rice
-- Breakfast: oatmeal, yogurt, eggs, bacon
-- Desserts: cookies, brownies
+Be specific but flexible - if you see:
+- A burger → say "cheeseburger" or "burger"
+- Pizza → say "cheese pizza" or "pepperoni pizza"
+- Eggs → say "scrambled eggs"
+- Fries → say "french fries"
+- Chicken → specify if grilled, fried, or baked
 
-Return ONLY the item name, no extra words or punctuation."""
+{menu_context}
+
+Return ONLY the item name in lowercase, no extra words, punctuation, or explanations."""
                     },
                     {
                         "inline_data": {
@@ -278,7 +337,7 @@ Return ONLY the item name, no extra words or punctuation."""
         }
         
         response = requests.post(
-            f"{url}?key={api_key}",
+            url,
             headers=headers,
             json=payload
         )
@@ -288,11 +347,17 @@ Return ONLY the item name, no extra words or punctuation."""
         
         # Parse Gemini response
         if 'candidates' in result and len(result['candidates']) > 0:
-            text = result['candidates'][0]['content']['parts'][0]['text']
-            # Return as prediction format
+            detected_text = result['candidates'][0]['content']['parts'][0]['text'].strip().lower()
+            
+            # Try to find best match in menu
+            if menu_df is not None:
+                best_match = find_best_match(menu_df, detected_text)
+                if best_match:
+                    detected_text = best_match
+            
             return [{
-                'label': text.strip(),
-                'confidence': 0.92  # Gemini doesn't provide confidence scores
+                'label': detected_text,
+                'confidence': 0.92
             }]
         
         return []
