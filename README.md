@@ -45,7 +45,7 @@ Copy code
 1. Clone the repo:  
 
 bash
-git clone https://github.com/YOUR_GITHUB/ai_meal_optimizer.git
+git clone https://github.com/CuHackit/ai_meal_optimizer.git
 cd ai_meal_optimizer
 Create a virtual environment:
 
