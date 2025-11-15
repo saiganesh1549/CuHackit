@@ -1,4 +1,6 @@
 streamlit
 pandas
+requests
+python-dotenv
 rapidfuzz
 pillow
