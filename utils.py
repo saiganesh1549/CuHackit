@@ -272,7 +272,7 @@ def find_best_match(menu_df: pd.DataFrame, detected_food: str) -> Optional[str]:
     return best_match
 
 
-def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None) -> List[Dict]:
+def predict_meal_from_image(image_path: str) -> List[Dict]:
     """
     Use Gemini Vision API to identify meals from an image.
     Now includes fuzzy matching to connect detected food to CSV menu items.

@@ -146,12 +146,12 @@ elif upload_image or camera_image:
     # Display the uploaded image
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.image(image_source, caption="Your Meal", use_container_width=True)
+        st.image(image_source, caption="Your Meal", width="stretch")
     
     with col2:
         # Get predictions from Gemini (now with menu context)
         with st.spinner("Identifying meal..."):
-            predictions = predict_meal_from_image(temp_path, menu_df)
+            predictions = predict_meal_from_image(temp_path)
         
         if predictions:
             st.success("✅ Meal identified!")
