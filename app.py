@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from utils import load_menus, search_meals, suggest_healthier, predict_meal_from_image
-import google.generativeai as genai
+
 
 # Page config
 st.set_page_config(page_title="AI Meal Optimizer", layout="wide")
@@ -143,7 +143,7 @@ elif upload_image or camera_image:
     # Display the uploaded image
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.image(image_source, caption="Your Meal", width="stretch")
+        st.image(image_source, caption="Your Meal", use_container_width=True)
     
     with col2:
         # Get predictions from Gemini (now with menu context)
