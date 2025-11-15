@@ -284,7 +284,7 @@ def predict_meal_from_image(image_path: str) -> List[Dict]:
     Returns:
         List of dictionaries with label and confidence
     """
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = "AIzaSyDNns8-guhBJTLGSfuafiJU3mAgxj9sjoc"
     
     if not api_key:
         print("Warning: GEMINI_API_KEY not set")
