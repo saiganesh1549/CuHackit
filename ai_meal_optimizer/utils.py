@@ -1,50 +1,75 @@
 import pandas as pd
-from rapidfuzz import process
 import os
-import random
+from PIL import Image
+import io
 
-# Load menu with fallback if CSV missing or empty
-def load_menu(csv_path="clemson_food.csv"):
-    if os.path.exists(csv_path):
-        try:
-            df = pd.read_csv(csv_path)
-            if df.empty:
-                print("CSV is empty. Using mock menu.")
-                return load_menu_mock()
-            return df
-        except Exception as e:
-            print(f"Error reading CSV: {e}. Using mock menu.")
-            return load_menu_mock()
+# Gemini Vision imports
+from google.generativeai import client as genai
+
+# Configure Gemini API key from environment
+GEN_API_KEY = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=GEN_API_KEY)
+
+
+# ---------- CSV / Menu Utilities ----------
+
+def load_all_menus(csv_paths=None):
+    """Load multiple CSVs into a single DataFrame"""
+    if csv_paths is None:
+        csv_paths = [
+            "ai_meal_optimizer/core.csv",
+            "ai_meal_optimizer/schiletter.csv",
+            "ai_meal_optimizer/douthit.csv"
+        ]
+    dfs = []
+    for path in csv_paths:
+        if os.path.exists(path):
+            dfs.append(pd.read_csv(path))
+    if dfs:
+        return pd.concat(dfs, ignore_index=True)
     else:
-        print("CSV not found. Using mock menu.")
-        return load_menu_mock()
+        return pd.DataFrame(columns=["item_name", "calories", "protein", "carbs", "fat"])
 
-# Mock menu fallback
-def load_menu_mock():
-    data = {
-        "item_name": ["Chicken Sandwich", "Veggie Burger", "Pasta Primavera", "Salad Bowl", "Beef Taco"],
-        "calories": [500, 400, 350, 200, 450],
-        "protein": [30, 20, 15, 5, 25],
-        "carbs": [50, 45, 60, 20, 40],
-        "fat": [20, 10, 5, 2, 15]
-    }
-    return pd.DataFrame(data)
 
-# Text search function
-def find_meal(query, menu_df):
-    results = process.extract(query, menu_df['item_name'], limit=5)
-    return results
+def find_meal(menu_df, query, top_n=5):
+    """Find meals matching query"""
+    menu_df["match_score"] = menu_df["item_name"].str.lower().apply(lambda x: query.lower() in x)
+    results = menu_df[menu_df["match_score"]].copy()
+    return results.head(top_n)
 
-# Demo Top 3 AI predictions (replace with Gemini/OpenAI API later)
-def predict_top_3(menu_df):
-    menu_list = menu_df['item_name'].tolist()
-    if len(menu_list) <= 3:
-        return menu_list
-    return random.sample(menu_list, 3)
 
-def predict_top_3(menu_df):
-    import random
-    menu_list = menu_df['item_name'].tolist()
-    if len(menu_list) <= 3:
-        return menu_list
-    return random.sample(menu_list, 3)
+def suggest_healthy(menu_df, n=3):
+    """Suggest the n lowest-calorie items"""
+    if menu_df.empty:
+        return []
+    return menu_df.sort_values("calories").head(n)["item_name"].tolist()
+
+
+# ---------- AI / Gemini Vision ----------
+
+def predict_top_3_gemini(image_file, menu_list):
+    """
+    Send the image to Gemini Vision to identify top 3 menu items.
+    Fallback to first 3 items if AI fails.
+    """
+    try:
+        image_bytes = image_file.read()
+        image_stream = io.BytesIO(image_bytes)
+
+        prompt = f"Identify which of these menu items this image is: {', '.join(menu_list)}. Return top 3 items."
+
+        response = genai.images.generate(
+            model="gemini-vision",
+            prompt=prompt,
+            image=image_stream
+        )
+
+        # Assuming response['candidates'] has text predictions
+        top_3 = [cand['text'] for cand in response.get('candidates', [])][:3]
+
+        if not top_3:
+            top_3 = menu_list[:3]  # fallback
+    except Exception as e:
+        print(f"Gemini AI error: {e}")
+        top_3 = menu_list[:3]  # fallback
+    return top_3

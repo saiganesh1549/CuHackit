@@ -1,41 +1,40 @@
 import streamlit as st
-from PIL import Image
-import pandas as pd
-from utils import load_menu, find_meal, predict_top_3
+from ai_meal_optimizer.utils import load_all_menus, find_meal, suggest_healthy, predict_top_3_gemini
 
-st.set_page_config(page_title="AI Campus Meal Optimizer", layout="centered")
+st.set_page_config(page_title="AI Campus Meal Optimizer")
+
+# ---------- Load Data ----------
+menu_df = load_all_menus()
+
+# ---------- App Header ----------
 st.title("AI Campus Meal Optimizer")
 st.write("Search for meals or scan a photo to identify your meal!")
 
-# --- Load menu ---
-menu_df = load_menu()  # safe: uses mock if CSV missing/empty
-
-# --- Text search ---
+# ---------- Search by Name ----------
 st.subheader("Search meals by name")
 query = st.text_input("Type your meal query:")
 
 if query:
-    results = find_meal(query, menu_df)
-    st.subheader("Top meal matches")
-    st.write(results)
+    results = find_meal(menu_df, query)
+    if not results.empty:
+        st.write("Top meal matches:")
+        st.table(results[["item_name", "calories", "protein", "carbs", "fat"]])
+    else:
+        st.write("No matching meals found.")
 
-# --- Scan meal photo ---
+# ---------- Scan Meal Image ----------
 st.subheader("Scan your meal")
-uploaded_image = st.file_uploader("Upload a photo of your meal", type=["png", "jpg", "jpeg"])
+image_file = st.file_uploader("Upload a photo of your meal", type=["png", "jpg", "jpeg"])
 
-if uploaded_image:
-    image = Image.open(uploaded_image)
-    st.image(image, caption="Uploaded meal")
+if image_file:
+    menu_list = menu_df["item_name"].tolist()
+    top_suggestions = predict_top_3_gemini(image_file, menu_list)
+    st.write("Top AI predictions for your meal:")
+    st.write(top_suggestions)
 
-    st.write("Identifying meal...")
+    healthy_suggestions = suggest_healthy(menu_df)
+    st.write("Healthy suggestions:")
+    st.write(healthy_suggestions)
 
-    # --- Demo AI Top 3 predictions ---
-    top_suggestions = predict_top_3(menu_df)
-
-    st.subheader("Top 3 predicted meals from menu")
-    for meal in top_suggestions:
-        st.write(f"**{meal}**")
-        meal_info = menu_df[menu_df['item_name'] == meal]
-        st.dataframe(meal_info)
 
 
