@@ -9,10 +9,10 @@ from utils import load_menus, search_meals, suggest_healthier, predict_meal_from
 
 
 # Page config
-st.set_page_config(page_title="AI Meal Optimizer", layout="wide")
+st.set_page_config(page_title="TigerPlate ", layout="wide")
 
 # Title
-st.title("🍽️ AI Meal Optimizer")
+st.title("🍽️ TigerPlate")
 st.markdown("Find healthier meal alternatives from your dining hall menus")
 
 # Load menus with caching
@@ -303,9 +303,7 @@ else:
     - 🕐 Filter by meal time (breakfast/lunch/dinner)
     - 🏫 Filter by dining hall location
     
-    ### Setup Required:
-    - Set `GEMINI_API_KEY` environment variable to enable image recognition
-    - Get your free API key at: https://aistudio.google.com/app/apikey
+
     """)
     
     # Show sample of available meals
