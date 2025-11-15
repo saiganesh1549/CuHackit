@@ -302,7 +302,7 @@ def predict_meal_from_image(image_path: str) -> List[Dict]:
             menu_context = f"\n\nAvailable menu items include: {', '.join(sample_items[:30])}"
         
         # Gemini API endpoint (updated URL format)
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         
         headers = {
             "Content-Type": "application/json"
