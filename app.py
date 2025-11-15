@@ -3,6 +3,8 @@ load_dotenv()
 
 import streamlit as st
 import os
+import json
+import datetime
 from utils import load_menus, search_meals, suggest_healthier, predict_meal_from_image
 
 
@@ -57,6 +59,12 @@ else:
     )
     camera_image = None
 
+# User goals
+st.sidebar.subheader("🎯 Daily Goals")
+goal_calories = st.sidebar.number_input("Calories", value=2000)
+goal_protein = st.sidebar.number_input("Protein (g)", value=100)
+goal_fat = st.sidebar.number_input("Fat (g)", value=70)
+
 # Filter by dining hall if selected
 if dining_hall != "All Dining Halls":
     filtered_df = menu_df[menu_df['hall'] == dining_hall]
@@ -81,6 +89,27 @@ else:
         st.success(f"✅ Showing {len(filtered_df)} items from {' - '.join(filter_text)}")
     else:
         st.success(f"✅ Loaded {len(menu_df)} items from all dining halls")
+
+# Meal log file
+LOG_FILE = "meal_log.json"
+
+def log_meal(meal):
+    data = []
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, "r") as f:
+            data = json.load(f)
+    meal["timestamp"] = datetime.datetime.utcnow().isoformat()
+    data.append(meal)
+    with open(LOG_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def get_today_meals():
+    if not os.path.exists(LOG_FILE):
+        return []
+    today = datetime.datetime.utcnow().date().isoformat()
+    with open(LOG_FILE, "r") as f:
+        meals = json.load(f)
+    return [m for m in meals if m["timestamp"].startswith(today)]
 
 # Main app logic
 if search_query:
@@ -165,7 +194,29 @@ elif upload_image or camera_image:
             if exact_match:
                 st.info(f"📍 Found in menu: **{exact_match[0]['item_name']}** — {exact_match[0]['calories']} cal")
                 
-                # Suggest healthier alternatives
+                # Health score
+                st.subheader("💡 Health Score")
+                nutrition_info = exact_match[0]
+                calories = nutrition_info.get("calories", 0)
+                protein = nutrition_info.get("protein_g", 0)
+                fat = nutrition_info.get("fat_g", 0)
+                score = max(0, min(100, int(100 - calories/30 + protein*2 - fat*1.5)))
+                explanation = f"Calories: {calories}, Protein: {protein}g, Fat: {fat}g — balanced for a healthy meal."
+                st.metric("Health Score", f"{score}/100")
+                st.write(f"💬 {explanation}")
+
+                # Log button
+                if st.button("➕ Log this meal"):
+                    meal_data = {
+                        "item_name": detected_name,
+                        "calories": calories,
+                        "protein_g": protein,
+                        "fat_g": fat,
+                    }
+                    log_meal(meal_data)
+                    st.success("Meal logged ✅")
+
+                # Show healthier alternatives
                 st.divider()
                 st.subheader("💚 Healthier Alternatives")
                 
@@ -204,6 +255,24 @@ elif upload_image or camera_image:
                         st.write("**Suggestions:**")
                         for i, r in enumerate(manual_results, 1):
                             st.write(f"{i}. {r['item_name']} — {r['calories']} cal — {r['hall']}")
+            
+            # Show today's totals vs goals
+            today_meals = get_today_meals()
+            if today_meals:
+                total_cal = sum(m.get("calories",0) for m in today_meals)
+                total_protein = sum(m.get("protein_g",0) for m in today_meals)
+                total_fat = sum(m.get("fat_g",0) for m in today_meals)
+                st.divider()
+                st.subheader("📊 Today's Progress")
+                st.write(f"Calories: {total_cal}/{goal_calories}")
+                st.write(f"Protein: {total_protein}/{goal_protein} g")
+                st.write(f"Fat: {total_fat}/{goal_fat} g")
+                
+                if total_cal > goal_calories:
+                    st.warning(f"⚠️ Over daily calorie goal by {total_cal - goal_calories}")
+                else:
+                    st.success(f"✅ Under daily calorie goal by {goal_calories - total_cal}")
+                
         else:
             st.error("❌ Could not identify the meal. Make sure GEMINI_API_KEY is set, or try a clearer image.")
     
