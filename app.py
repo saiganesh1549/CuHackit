@@ -16,61 +16,133 @@ def get_menus():
 
 menu_df = get_menus()
 
+# Sidebar
+st.sidebar.header("🔍 Meal Options")
+
+# Dining hall selector
+dining_hall = st.sidebar.selectbox(
+    "Select Dining Hall:",
+    ["All Dining Halls", "core", "douthit", "shilletter"],
+    index=0
+)
+
+# Meal time filter
+meal_time = st.sidebar.selectbox(
+    "Meal Time:",
+    ["All Meals", "breakfast", "lunch", "dinner"],
+    index=0
+)
+
+search_query = st.sidebar.text_input("Search for a meal:", placeholder="e.g., scrambled eggs")
+
+# Image input options
+st.sidebar.subheader("📸 Image Options")
+image_option = st.sidebar.radio(
+    "Choose how to add an image:",
+    ["Upload Image", "Take Photo"],
+    label_visibility="collapsed"
+)
+
+if image_option == "Take Photo":
+    camera_image = st.sidebar.camera_input("Take a picture of your meal")
+    upload_image = None
+else:
+    upload_image = st.sidebar.file_uploader(
+        "Upload an image of your meal", 
+        type=["jpg", "png", "jpeg"]
+    )
+    camera_image = None
+
+# Filter by dining hall if selected
+if dining_hall != "All Dining Halls":
+    filtered_df = menu_df[menu_df['hall'] == dining_hall]
+else:
+    filtered_df = menu_df
+
+# Filter by meal time if selected
+if meal_time != "All Meals":
+    filtered_df = filtered_df[filtered_df['meal'] == meal_time]
+
 # Display data load status
 if menu_df.empty:
     st.error("⚠️ No menu data found. Make sure CSV files are in the same directory as the app.")
 else:
-    st.success(f"✅ Loaded {len(menu_df)} items from dining halls")
-
-# Sidebar
-st.sidebar.header("🔍 Meal Options")
-search_query = st.sidebar.text_input("Search for a meal:", placeholder="e.g., scrambled eggs")
-upload_image = st.sidebar.file_uploader(
-    "Or upload an image of your meal", 
-    type=["jpg", "png", "jpeg"]
-)
+    filter_text = []
+    if dining_hall != "All Dining Halls":
+        filter_text.append(f"{dining_hall}")
+    if meal_time != "All Meals":
+        filter_text.append(f"{meal_time}")
+    
+    if filter_text:
+        st.success(f"✅ Showing {len(filtered_df)} items from {' - '.join(filter_text)}")
+    else:
+        st.success(f"✅ Loaded {len(menu_df)} items from all dining halls")
 
 # Main app logic
 if search_query:
     st.subheader(f"🔎 Results for '{search_query}'")
     
-    results = search_meals(menu_df, search_query)
+    results = search_meals(filtered_df, search_query)
     
     if results:
         # Display search results
         for i, r in enumerate(results, 1):
-            st.write(f"**{i}. {r['meal']}** — {r['calories']} cal — 📍 {r['meal_location']}")
+            # Format macro info if available
+            macro_info = ""
+            if 'protein_g' in r and 'carbs_g' in r and 'fat_g' in r:
+                macro_info = f" — 🥩 {r['protein_g']}g protein, 🍞 {r['carbs_g']}g carbs, 🧈 {r['fat_g']}g fat"
+            
+            meal_badge = ""
+            if 'meal' in r:
+                meal_emoji = {"breakfast": "🌅", "lunch": "🌞", "dinner": "🌙"}.get(r['meal'], "")
+                meal_badge = f" {meal_emoji}" if meal_emoji else ""
+            
+            st.write(f"**{i}. {r['item_name']}**{meal_badge} — 🔥 {r['calories']} cal{macro_info} — 📍 {r['hall']}")
         
         # Show healthier alternatives for top result
         st.divider()
         st.subheader("💚 Healthier Alternatives")
         
-        healthier = suggest_healthier(menu_df, results[0]['meal_name'])
+        healthier = suggest_healthier(filtered_df, results[0]['item_name'])
         
         if healthier:
             for i, h in enumerate(healthier, 1):
                 calories_saved = results[0]['calories'] - h['calories']
+                
+                # Format macro info
+                macro_info = ""
+                if 'protein_g' in h and 'carbs_g' in h and 'fat_g' in h:
+                    macro_info = f" — 🥩 {h['protein_g']}g protein, 🍞 {h['carbs_g']}g carbs, 🧈 {h['fat_g']}g fat"
+                
+                meal_badge = ""
+                if 'meal' in h:
+                    meal_emoji = {"breakfast": "🌅", "lunch": "🌞", "dinner": "🌙"}.get(h['meal'], "")
+                    meal_badge = f" {meal_emoji}" if meal_emoji else ""
+                
                 st.write(
-                    f"**{i}. {h['meal_name']}** — {h['calories']} cal — 📍 {h['meal_location']} "
-                    f"*(Save {calories_saved} calories)*"
+                    f"**{i}. {h['item_name']}**{meal_badge} — 🔥 {h['calories']} cal{macro_info} — 📍 {h['hall']} "
+                    f"✅ *(Save {calories_saved} calories)*"
                 )
         else:
             st.info("No lower-calorie alternatives found for this meal.")
     else:
         st.warning(f"No results found for '{search_query}'. Try a different search term.")
 
-elif upload_image:
+elif upload_image or camera_image:
+    # Use whichever image source is available
+    image_source = camera_image if camera_image else upload_image
+    
     st.subheader("📸 Analyzing your meal...")
     
     # Save uploaded image temporarily
     temp_path = "temp_image.jpg"
     with open(temp_path, "wb") as f:
-        f.write(upload_image.getbuffer())
+        f.write(image_source.getbuffer())
     
     # Display the uploaded image
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.image(upload_image, caption="Uploaded Image", use_container_width=True)
+        st.image(image_source, caption="Your Meal", use_container_width=True)
     
     with col2:
         # Get predictions from Gemini
@@ -86,12 +158,22 @@ elif upload_image:
             st.divider()
             st.subheader("💚 Healthier Alternatives")
             
-            healthier = suggest_healthier(menu_df, predictions[0]['label'])
+            healthier = suggest_healthier(filtered_df, predictions[0]['label'])
             
             if healthier:
                 for i, h in enumerate(healthier, 1):
+                    # Format macro info
+                    macro_info = ""
+                    if 'protein_g' in h and 'carbs_g' in h and 'fat_g' in h:
+                        macro_info = f" — 🥩 {h['protein_g']}g protein, 🍞 {h['carbs_g']}g carbs, 🧈 {h['fat_g']}g fat"
+                    
+                    meal_badge = ""
+                    if 'meal' in h:
+                        meal_emoji = {"breakfast": "🌅", "lunch": "🌞", "dinner": "🌙"}.get(h['meal'], "")
+                        meal_badge = f" {meal_emoji}" if meal_emoji else ""
+                    
                     st.write(
-                        f"**{i}. {h['meal_name']}** — {h['calories']} cal — 📍 {h['meal_location']}"
+                        f"**{i}. {h['item_name']}**{meal_badge} — 🔥 {h['calories']} cal{macro_info} — 📍 {h['hall']}"
                     )
             else:
                 st.info(
@@ -110,24 +192,36 @@ elif upload_image:
 
 else:
     # Welcome screen
-    st.info("👈 **Get started:** Search for a meal or upload an image in the sidebar!")
+    st.info("👈 **Get started:** Search for a meal, upload an image, or take a photo in the sidebar!")
     
     st.markdown("""
     ### How it works:
-    1. **Search by name**: Type a meal name (e.g., "scrambled eggs") to see nutrition info
-    2. **Upload an image**: Take a photo of your meal and let AI identify it
-    3. **Get alternatives**: Discover healthier options with fewer calories
+    1. **Filter your options**: Select dining hall and meal time
+    2. **Search by name**: Type a meal name (e.g., "scrambled eggs") to see nutrition info
+    3. **Upload an image**: Choose a photo from your device
+    4. **Take a photo**: Use your camera to snap a pic of your meal (mobile-friendly!)
+    5. **Get alternatives**: Discover healthier options with better nutrition
     
     ### Features:
     - 🔍 Search across multiple dining halls
-    - 📊 Compare calorie counts instantly
+    - 📊 Complete nutrition info (calories, protein, carbs, fat)
     - 🤖 AI-powered image recognition (requires GEMINI_API_KEY)
-    - 💡 Smart recommendations for healthier choices
+    - 💡 Smart recommendations based on meal type and nutrition
+    - 🕐 Filter by meal time (breakfast/lunch/dinner)
+    - 🏫 Filter by dining hall location
     """)
     
     # Show sample of available meals
-    if not menu_df.empty:
+    if not filtered_df.empty:
         st.divider()
         st.subheader("📋 Sample Menu Items")
-        sample = menu_df.sample(min(10, len(menu_df)))[['meal_name', 'calories', 'meal_location']]
+        
+        # Prepare sample columns
+        sample_cols = ['item_name', 'calories', 'hall']
+        if 'protein_g' in filtered_df.columns:
+            sample_cols.append('protein_g')
+        if 'meal' in filtered_df.columns:
+            sample_cols.append('meal')
+            
+        sample = filtered_df.sample(min(10, len(filtered_df)))[sample_cols]
         st.dataframe(sample, use_container_width=True, hide_index=True)
