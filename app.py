@@ -6,13 +6,182 @@ import os
 import json
 import datetime
 from utils import load_menus, search_meals, suggest_healthier, predict_meal_from_image
+from auth import login_screen, sign_up_screen
+
+
+if "screen" not in st.session_state:
+    st.session_state["screen"] = "login"
+
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+
+# Routing
+if st.session_state["logged_in"]:
+    st.title("🎉 Logged In!")
+else:
+    if st.session_state["screen"] == "login":
+        login_screen()
+        st.stop()   
+
+    elif st.session_state["screen"] == "signup":
+        sign_up_screen()
+        st.stop()   
+
+
+col_logo, col_title, col_spacer = st.columns([1, 3, 1])
+
+with col_logo:
+    st.image("Clemson_logo.jpg", width=20000)
+
+with col_title:
+    st.markdown("""
+    <div class="tigerplate-title" style="text-align:center;">
+        TigerPlate
+    </div>
+    """, unsafe_allow_html=True)
+
+
+
+st.markdown("""
+<style>
+
+/* ----------------------------------------------
+   GLOBAL
+---------------------------------------------- */
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif !important;
+    background-color: #FFFFFF !important;
+    color: #2D2A24 !important;
+}
+
+/* MAIN CONTENT BACKGROUND */
+.block-container {
+    background-color: #FFFFFF !important;
+    padding-top: 1rem;
+}
+
+/* ----------------------------------------------
+   SIDEBAR
+---------------------------------------------- */
+
+[data-testid="stSidebar"] {
+    background-color: #522D80 !important; /* Clemson off-white */
+}
+
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: #F56600 !important; /* Clemson orange */
+    font-weight: 800;
+}
+
+/* Sidebar labels */
+[data-testid="stSidebar"] label {
+    color: #5A2A83 !important; /* Clemson purple */
+    font-weight: 600;
+}
+
+/* ----------------------------------------------
+   BUTTONS
+---------------------------------------------- */
+
+.stButton>button {
+    background-color: #F56600 !important;  /* Clemson Orange */
+    color: white !important;
+    border-radius: 10px !important;
+    padding: 0.55rem 1.1rem !important;
+    border: none !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+}
+
+.stButton>button:hover {
+    background-color: #D45500 !important;
+}
+
+/* ----------------------------------------------
+   METRICS
+---------------------------------------------- */
+
+[data-testid="stMetricValue"] {
+    color: #5A2A83 !important;      /* Purple */
+    font-weight: 900 !important;
+    font-size: 1.5rem !important;
+}
+
+[data-testid="stMetricLabel"] {
+    color: #2D2A24 !important;
+    font-weight: 600 !important;
+}
+
+/* ----------------------------------------------
+   CLEMSON HEADER (CUSTOM)
+---------------------------------------------- */
+
+.tigerplate-header {
+    width: 100%;
+    text-align: center;
+    padding: 2rem 0 1.5rem 0;
+    background: linear-gradient(90deg, #F56600, #D45500);
+    border-radius: 10px;
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.tigerplate-title {
+    font-size: 3rem;
+    font-weight: 900;
+    color: white;
+    margin-top: 0.5rem;
+}
+
+.tiger-paw {
+    width: 50px;
+    filter: drop-shadow(0px 0px 6px rgba(0,0,0,0.25));
+}
+
+/* ----------------------------------------------
+   TIGER PAW WATERMARK (Page Background)
+---------------------------------------------- */
+
+body::before {
+    content: "";
+    position: fixed;
+    right: 3%;
+    bottom: 5%;
+    width: 260px;
+    height: 260px;
+    background-image: url('https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Clemson_Tigers_logo.svg/1200px-Clemson_Tigers_logo.svg.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.05; /* subtle watermark */
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ----------------------------------------------
+   HEADERS
+---------------------------------------------- */
+
+h1, h2, h3, h4 {
+    color: #F56600 !important;
+    font-weight: 800 !important;
+}
+
+/* Divider */
+hr {
+    border-top: 2px solid #F56600 !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 
 # Page config
 st.set_page_config(page_title="TigerPlate ", layout="wide")
 
 # Title
-st.title("🍽️ TigerPlate")
+st.title("Tiger Plate")
 st.markdown("Find healthier meal alternatives from your dining hall menus")
 
 # Load menus with caching
@@ -40,6 +209,40 @@ meal_time = st.sidebar.selectbox(
 )
 
 search_query = st.sidebar.text_input("Search for a meal:", placeholder="e.g., scrambled eggs")
+
+st.sidebar.header("🍽️ Meal Builder")
+
+# Initialize a persistent list in session_state
+if "meal" not in st.session_state:
+    st.session_state.meal = []
+
+# Input box for new food item
+new_food = st.sidebar.text_input(
+    "Enter a food to add:",
+    placeholder="e.g., scrambled eggs"
+)
+
+# Button to add item
+if st.sidebar.button("Add Food"):
+    if new_food.strip():             # avoid empty items
+        st.session_state.meal.append(new_food.strip())
+        st.sidebar.success(f"Added: {new_food}")
+    else:
+        st.sidebar.error("Please enter a food name.")
+
+# Display current meal
+st.sidebar.subheader("Your Meal:")
+if st.session_state.meal:
+    for item in st.session_state.meal:
+        st.sidebar.write(f"• {item}")
+else:
+    st.sidebar.write("No foods added yet.")
+
+# Finish meal button
+if st.sidebar.button("Finish Meal"):
+    st.session_state.finish_meal = True
+else:
+    st.session_state.finish_meal = False
 
 # Image input options
 st.sidebar.subheader("📸 Image Options")
@@ -89,6 +292,27 @@ else:
         st.success(f"✅ Showing {len(filtered_df)} items from {' - '.join(filter_text)}")
     else:
         st.success(f"✅ Loaded {len(menu_df)} items from all dining halls")
+
+# --- Calculate Meal Builder Nutrition ---
+if st.session_state.meal:
+    from utils import calculate_meal_nutrition
+
+    totals = calculate_meal_nutrition(st.session_state.meal, filtered_df)
+
+    st.sidebar.subheader("📊 Meal Nutrition Totals")
+
+    st.sidebar.write(f"🔥 **Calories:** {totals['calories']} cal")
+    st.sidebar.write(f"🥩 **Protein:** {totals['protein_g']} g")
+    st.sidebar.write(f"🍞 **Carbs:** {totals['carbs_g']} g")
+    st.sidebar.write(f"🧈 **Fat:** {totals['fat_g']} g")
+
+    # Optional detailed breakdown
+    with st.sidebar.expander("See breakdown"):
+        for item in totals["matched_items"]:
+            st.write(
+                f"• **{item['item_name']}** — {item.get('calories', 0)} cal, "
+                f"{item.get('protein_g', 0)}g protein, {item.get('carbs_g', 0)}g carbs, {item.get('fat_g', 0)}g fat"
+            )
 
 # Meal log file
 LOG_FILE = "meal_log.json"
@@ -294,6 +518,7 @@ else:
     3. **Upload an image**: Choose a photo from your device
     4. **Take a photo**: Use your camera to snap a pic of your meal (mobile-friendly!)
     5. **Get alternatives**: Discover healthier options with better nutrition
+    6. **Meal Builder**: Build your own meals by adding as many foods as you would like
     
     ### Features:
     - 🔍 Search across multiple dining halls
@@ -302,6 +527,7 @@ else:
     - 💡 Smart recommendations based on meal type and nutrition
     - 🕐 Filter by meal time (breakfast/lunch/dinner)
     - 🏫 Filter by dining hall location
+    - 🍜 Meal Builder 
     
 
     """)

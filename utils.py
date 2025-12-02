@@ -2,7 +2,8 @@ import pandas as pd
 import os
 import base64
 from typing import List, Dict, Optional
-from google import genai
+#from google import genai
+import google.generativeai as genai
 
 
 def load_menus() -> pd.DataFrame:
@@ -12,7 +13,7 @@ def load_menus() -> pd.DataFrame:
     Returns:
         pd.DataFrame with columns: item_name, calories, hall, meal
     """
-    csv_files = ["core.csv", "douthit.csv", "shilletter.csv"]
+    csv_files = ["core.csv", "douthit.csv", "shiletter.csv"]
     dataframes = []
 
     for file in csv_files:
@@ -317,7 +318,9 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
                     {
                         "text": """You are a food recognition expert.
 Identify the main food item in this image. 
-Return ONLY the food name in lowercase with no extra words."""
+Return ONLY the food name in lowercase with no extra words.
+If the food item appears to be a combination of multiple foods 
+into a single meal Return ONLY the your interpretation of the meal and its contents."""
                     },
                     {
                         "inline_data": {
@@ -377,5 +380,30 @@ Return ONLY the food name in lowercase with no extra words."""
 
         traceback.print_exc()
         return []
+    
+
+def calculate_meal_nutrition(food_list, menu_df):
+    total = {
+        "calories": 0,
+        "protein_g": 0,
+        "carbs_g": 0,
+        "fat_g": 0,
+        "matched_items": []  # store detailed matches
+    }
+
+    for food in food_list:
+        # Try to find the food in the menu (case-insensitive partial match)
+        matches = menu_df[menu_df["item_name"].str.contains(food, case=False)]
+
+        if not matches.empty:
+            item = matches.iloc[0].to_dict()
+            total["matched_items"].append(item)
+
+            total["calories"] += item.get("calories", 0)
+            total["protein_g"] += item.get("protein_g", 0)
+            total["carbs_g"] += item.get("carbs_g", 0)
+            total["fat_g"] += item.get("fat_g", 0)
+
+    return total
     
     

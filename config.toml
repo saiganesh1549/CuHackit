@@ -1,0 +1,6 @@
+[theme]
+primaryColor="#F56600"              # Clemson Orange
+backgroundColor="#FFFFFF"           # WHITE MAIN BACKGROUND
+secondaryBackgroundColor="#F6F1EB"  # Light beige sidebar (Clemson)
+textColor="#F56600"                 # Dark gray text
+font="sans serif"
