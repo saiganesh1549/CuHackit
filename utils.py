@@ -2,8 +2,8 @@ import pandas as pd
 import os
 import base64
 from typing import List, Dict, Optional
-#from google import genai
-import google.generativeai as genai
+from google import genai
+#import google.generativeai as genai
 
 
 def load_menus() -> pd.DataFrame:
