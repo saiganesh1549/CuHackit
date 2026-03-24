@@ -307,7 +307,12 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
         api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         print("Warning: GEMINI_API_KEY not set")
+        import streamlit as st
+        st.error("API key not found")
         return []
+    else:
+        import streamlit as st
+        st.info(f"API key found, length: {len(api_key)}")
 
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel("gemini-1.5-flash")
