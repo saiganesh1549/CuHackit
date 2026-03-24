@@ -300,7 +300,11 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
     This version ignores menu_df entirely and returns ONLY the model output.
     """
 
-    api_key = os.getenv("GEMINI_API_KEY")
+    try:
+        import streamlit as st
+        api_key = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         print("Warning: GEMINI_API_KEY not set")
         return []
