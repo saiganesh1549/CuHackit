@@ -2,8 +2,8 @@ import pandas as pd
 import os
 import base64
 from typing import List, Dict, Optional
-from google import genai
-#import google.generativeai as genai
+#from google import genai
+import google.generativeai as genai
 
 
 def load_menus() -> pd.DataFrame:
@@ -305,37 +305,21 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
         print("Warning: GEMINI_API_KEY not set")
         return []
 
-    client = genai.Client(api_key=api_key)
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     try:
-        # Load & encode image
-        with open(image_path, "rb") as f:
-            image_data = base64.b64encode(f.read()).decode("utf-8")
+        # Load image
+        import PIL.Image
+        img = PIL.Image.open(image_path)
 
-        payload = [
-            {
-                "parts": [
-                    {
-                        "text": """You are a food recognition expert.
+        prompt = """You are a food recognition expert.
 Identify the main food item in this image. 
 Return ONLY the food name in lowercase with no extra words.
 If the food item appears to be a combination of multiple foods 
 into a single meal Return ONLY the your interpretation of the meal and its contents."""
-                    },
-                    {
-                        "inline_data": {
-                            "mime_type": "image/jpeg",
-                            "data": image_data,
-                        }
-                    },
-                ]
-            }
-        ]
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=payload
-        )
+        response = model.generate_content([prompt, img])
 
         # Extract pure text result
         result_text = response.text.strip().lower()
