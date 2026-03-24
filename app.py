@@ -31,7 +31,7 @@ else:
 col_logo, col_title, col_spacer = st.columns([1, 3, 1])
 
 with col_logo:
-    st.image("Clemson_logo.jpg", width=200)
+    st.image("clemson_logo.jpg", width=200)
 
 with col_title:
     st.markdown("""
