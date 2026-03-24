@@ -340,7 +340,8 @@ into a single meal Return ONLY the your interpretation of the meal and its conte
         }]
 
     except Exception as e:
-        print("Error calling Gemini:", e)
+        import streamlit as st
+        st.error(f"Gemini API error: {e}")
         import traceback
         traceback.print_exc()
         return []
