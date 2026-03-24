@@ -315,7 +315,7 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
         st.info(f"API key found, length: {len(api_key)}")
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     try:
         # Load image
