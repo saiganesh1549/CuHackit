@@ -4,4 +4,4 @@ requests
 python-dotenv
 rapidfuzz
 pillow
-google-generativeai
+google-genai

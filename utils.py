@@ -2,8 +2,8 @@ import pandas as pd
 import os
 import base64
 from typing import List, Dict, Optional
-#from google import genai
-import google.generativeai as genai
+from google import genai
+#import google.generativeai as genai
 
 
 def load_menus() -> pd.DataFrame:
@@ -314,21 +314,25 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
         import streamlit as st
         st.info(f"API key found, length: {len(api_key)}")
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("models/gemini-1.5-flash")
+    client = genai.Client(api_key=api_key)
 
     try:
-        # Load image
-        import PIL.Image
-        img = PIL.Image.open(image_path)
+        # Load & encode image
+        with open(image_path, "rb") as f:
+            image_data = base64.b64encode(f.read()).decode("utf-8")
 
-        prompt = """You are a food recognition expert.
-Identify the main food item in this image. 
-Return ONLY the food name in lowercase with no extra words.
-If the food item appears to be a combination of multiple foods 
-into a single meal Return ONLY the your interpretation of the meal and its contents."""
-
-        response = model.generate_content([prompt, img])
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[
+                {
+                    "inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": image_data,
+                    }
+                },
+                "You are a food recognition expert. Identify the main food item in this image. Return ONLY the food name in lowercase with no extra words. If the food item appears to be a combination of multiple foods into a single meal Return ONLY your interpretation of the meal and its contents."
+            ]
+        )
 
         # Extract pure text result
         result_text = response.text.strip().lower()
