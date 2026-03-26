@@ -310,9 +310,7 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
         import streamlit as st
         st.error("API key not found")
         return []
-    else:
-        import streamlit as st
-        st.info(f"API key found, length: {len(api_key)}")
+
 
     client = genai.Client(api_key=api_key)
 
@@ -344,8 +342,7 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
         }]
 
     except Exception as e:
-        import streamlit as st
-        st.error(f"Gemini API error: {e}")
+        print("Error calling Gemini:", e)
         import traceback
         traceback.print_exc()
         return []
