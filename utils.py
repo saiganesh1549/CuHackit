@@ -322,7 +322,7 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
             image_data = base64.b64encode(f.read()).decode("utf-8")
 
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=[
                 {
                     "inline_data": {
