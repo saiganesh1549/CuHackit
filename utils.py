@@ -253,6 +253,29 @@ def find_best_match(menu_df: pd.DataFrame, detected_food: str) -> Optional[str]:
         detected_lower.replace("the ", "").replace("a ", "").replace("an ", "")
     )
 
+    # Synonym mapping for common food variations
+    synonyms = {
+        "hamburger": ["burger", "cheeseburger"],
+        "burger": ["hamburger", "cheeseburger"],
+        "fries": ["french fries", "potato fries"],
+        "chicken sandwich": ["chicken burger"],
+        "salad": ["garden salad", "side salad"],
+        "pasta": ["spaghetti", "penne", "noodles"],
+        "rice": ["steamed rice", "white rice"],
+        "pizza": ["cheese pizza", "pepperoni pizza"],
+        "soup": ["broth", "chowder", "stew"],
+        "wrap": ["burrito", "tortilla"],
+    }
+
+    # Expand search terms with synonyms
+    search_terms = [detected_lower]
+    for key, vals in synonyms.items():
+        if key in detected_lower:
+            search_terms.extend(vals)
+        for v in vals:
+            if v in detected_lower:
+                search_terms.append(key)
+
     # First try exact match
     exact_match = menu_df[menu_df["item_name"].str.lower() == detected_lower]
     if not exact_match.empty:
@@ -270,12 +293,12 @@ def find_best_match(menu_df: pd.DataFrame, detected_food: str) -> Optional[str]:
         item_name = row["item_name"].lower()
         score = 0
 
-        # Check if detected food is substring of menu item
-        if detected_lower in item_name:
-            score = 100
-        # Check if menu item is substring of detected food
-        elif item_name in detected_lower:
-            score = 90
+        # Check all search terms (including synonyms)
+        for term in search_terms:
+            if term in item_name:
+                score = max(score, 100)
+            elif item_name in term:
+                score = max(score, 90)
         else:
             # Count matching words
             for word in words:
