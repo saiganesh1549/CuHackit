@@ -351,7 +351,7 @@ def predict_meal_from_image(image_path: str, menu_df: pd.DataFrame = None):
                         "data": image_data,
                     }
                 },
-                "You are a food recognition expert. Identify the main food item in this image. Return ONLY the food name in lowercase with no extra words. If the food item appears to be a combination of multiple foods into a single meal Return ONLY your interpretation of the meal and its contents."
+                "Identify the food in this image. Return ONLY the simple food name in 1-2 words lowercase. Examples: cheeseburger, fried chicken, caesar salad, spaghetti. Never describe ingredients or toppings. Just the name."
             ]
         )
 
